@@ -5,6 +5,7 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.efficientnet_v2 import preprocess_input
 from flask import Flask, request, render_template, send_from_directory
 from werkzeug.utils import secure_filename
+import requests
 
 app = Flask(__name__)
 
@@ -58,12 +59,30 @@ disease_info = {
 }
 
 # --- 2. LOAD MODEL ---
+model_path = "skindisease.h5"
+model_url = "https://github.com/srikanthkn2005/dermo_scan_AI/releases/download/v1.0/skindisease.h5"  # Replace with actual release URL
+
+if not os.path.exists(model_path):
+    print("Model not found locally. Downloading from GitHub...")
+    try:
+        response = requests.get(model_url, stream=True)
+        response.raise_for_status()
+        with open(model_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        print("Model downloaded successfully!")
+    except Exception as e:
+        print(f"Error downloading model: {e}")
+        model = None
+else:
+    print("Model found locally.")
+
 try:
-    # Ensure your model file is named 'skindisease.h5'
-    model = load_model("skindisease.h5", compile=False)
+    model = load_model(model_path, compile=False)
     print("Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
+    model = None
 
 @app.route('/')
 def index():
@@ -101,21 +120,24 @@ def upload():
             x = preprocess_input(x)
 
             # Prediction
-            preds = model.predict(x)[0]
-            
-            # 4 Classes (Alphabetical Order)
-            classes = ['Acne', 'Eczema', 'Rosacea', 'Tinea Ringworm']
-            
-            pred_index = np.argmax(preds)
-            confidence_val = preds[pred_index] * 100
-            confidence = f"{confidence_val:.2f}"
-            
-            if pred_index < len(classes):
-                prediction_text = classes[pred_index]
-                if prediction_text in disease_info:
-                    info = disease_info[prediction_text]
+            if model is None:
+                prediction_text = "Model not loaded"
             else:
-                prediction_text = "Unknown"
+                preds = model.predict(x)[0]
+                
+                # 4 Classes (Alphabetical Order)
+                classes = ['Acne', 'Eczema', 'Rosacea', 'Tinea Ringworm']
+                
+                pred_index = np.argmax(preds)
+                confidence_val = preds[pred_index] * 100
+                confidence = f"{confidence_val:.2f}"
+                
+                if pred_index < len(classes):
+                    prediction_text = classes[pred_index]
+                    if prediction_text in disease_info:
+                        info = disease_info[prediction_text]
+                else:
+                    prediction_text = "Unknown"
 
         except Exception as e:
             print(f"Server Error: {e}")
