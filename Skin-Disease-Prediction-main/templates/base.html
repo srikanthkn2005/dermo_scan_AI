@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dermascan AI - Free Analysis Tool</title>
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- THEME COLORS --- */
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --accent-gold: #e2b714;
+            --text-white: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-white);
+        }
+
+        /* --- NAVBAR & HERO --- */
+        .navbar { background-color: #111 !important; padding: 15px 0; border-bottom: 1px solid #333; }
+        .navbar-brand { font-weight: 700; color: var(--accent-gold) !important; font-size: 1.5rem; }
+        .hero-section { text-align: center; padding: 60px 20px; }
+        .hero-title { color: var(--accent-gold); font-weight: 700; font-size: 2.5rem; margin-bottom: 10px; }
+        .badge-custom { background-color: #333; color: var(--accent-gold); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-gold); margin: 0 5px; font-size: 0.85rem; }
+
+        /* --- UPLOAD BOX --- */
+        .upload-container {
+            border: 2px dashed #555;
+            border-radius: 12px;
+            padding: 50px;
+            text-align: center;
+            background-color: #222;
+            cursor: pointer;
+            transition: all 0.3s;
+            max-width: 700px;
+            margin: 0 auto 40px auto;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .upload-container:hover { border-color: var(--accent-gold); background-color: #2a2a2a; }
+        .upload-icon { font-size: 3rem; color: #777; margin-bottom: 15px; }
+
+        /* --- IMAGES & SCANNING --- */
+        #imagePreview {
+            max-width: 100%; max-height: 400px; border-radius: 8px; display: none; margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative; z-index: 1;
+        }
+        .scan-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(0, 255, 0, 0), rgba(0, 255, 0, 0.4), rgba(0, 255, 0, 0));
+            border-bottom: 2px solid #00ff00; z-index: 2; display: none;
+            animation: scan 1.5s infinite linear;
+        }
+        @keyframes scan { 0% { top: -100%; } 100% { top: 100%; } }
+
+        /* --- BUTTONS --- */
+        .analyze-btn {
+            background-color: var(--accent-gold); color: #000; font-weight: 700; padding: 12px 40px; border: none; border-radius: 30px;
+            font-size: 1.1rem; margin-top: 20px; display: none; 
+        }
+        .analyze-btn:hover { background-color: #c9a312; transform: scale(1.05); }
+        .btn-gold {
+            background-color: var(--accent-gold); color: #000; font-weight: 700; border: none; width: 100%; padding: 12px; border-radius: 6px; transition: all 0.3s;
+        }
+        .btn-gold:hover { background-color: #c9a312; }
+
+        /* --- RESULT CARD --- */
+        .result-card {
+            background-color: #2d2d2d; border-radius: 12px; overflow: hidden; display: flex; max-width: 900px; margin: 0 auto; border: 1px solid #444;
+        }
+        .result-image-box { width: 40%; background: #000; display: flex; align-items: center; justify-content: center; }
+        .result-image-box img { width: 100%; height: auto; display: block; }
+        .result-details { width: 60%; padding: 30px; text-align: left; }
+        
+        .stat-row { color: #aaa; font-size: 0.9rem; margin-bottom: 5px; }
+        .stat-row i { color: var(--accent-gold); width: 20px; }
+        
+        .probability-box { border: 1px dashed #666; border-radius: 8px; padding: 15px; margin: 20px 0; background: #222; }
+        
+        .desc-input { background-color: #222; border: 1px solid #444; color: #ddd; font-size: 0.85rem; border-radius: 8px; resize: none; width: 100%; padding: 10px; }
+
+        /* --- FEATURES & FOOTER --- */
+        .features-section { text-align: center; padding: 40px 0; background-color: #111; margin-top: 40px; }
+        .feature-icon { color: var(--accent-gold); font-size: 2rem; margin-bottom: 15px; }
+        .disease-list { list-style: none; padding: 0; text-align: left; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-width: 1000px; margin: 30px auto; }
+        .disease-list li { color: #ccc; font-size: 0.95rem; }
+        .disease-list li i { color: var(--accent-gold); margin-right: 8px; }
+        footer { background-color: #343a40; color: #ccc; padding: 20px 0; text-align: center; margin-top: auto; }
+
+        /* --- MODAL (REPORT POPUP) STYLES --- */
+        .modal-content { border-radius: 0; border: none; }
+        .modal-header { border-bottom: 2px solid #333; background-color: #fff; color: #000; }
+        .modal-body { font-family: 'Merriweather', serif; color: #333; padding: 40px; background-color: #fff; }
+        .report-section-title { font-weight: 700; font-size: 1.1rem; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+
+        /* --- PRINT SETTINGS --- */
+        @media print {
+            body * { visibility: hidden; }
+            #reportModal, #reportModal * { visibility: visible; }
+            #reportModal { position: absolute; left: 0; top: 0; margin: 0; padding: 0; width: 100%; min-height: 100%; }
+            .modal-footer { display: none !important; }
+            .modal-content { box-shadow: none; border: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-microscope mr-2"></i> Dermascan AI</a>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="hero-title">Dermascan AI</div>
+        <p class="text-muted">Advanced AI Skin Disease Analysis & Diagnosis Tool</p>
+        <div>
+            <span class="badge-custom">Free Diagnosis</span>
+            <span class="badge-custom" style="color:#28a745; border-color:#28a745">Powered by Visual AI</span>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if not prediction %}
+        <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm" onsubmit="startScanning()">
+            <div class="upload-container" onclick="document.getElementById('imageUpload').click()">
+                <div id="uploadPlaceholder">
+                    <div class="upload-icon"><i class="fas fa-image"></i></div>
+                    <h5>Click to upload the skin disease image</h5>
+                    <p class="text-muted small">Supports JPG, PNG</p>
+                </div>
+                <img id="imagePreview" src="#" alt="Image Preview">
+                <div id="scanOverlay" class="scan-overlay"></div>
+                <input type="file" name="image" id="imageUpload" style="display:none;" onchange="previewImage(this)">
+            </div>
+            <div class="text-center">
+                <button type="submit" class="analyze-btn" id="analyzeBtn">
+                    <i class="fas fa-search mr-2"></i> Analyze Now
+                </button>
+                <button type="button" class="analyze-btn" id="scanningBtn" style="display:none;" disabled>
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Scanning...
+                </button>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if prediction %}
+        <div class="result-card">
+            <div class="result-image-box">
+                <img src="{{ url_for('uploaded_file', filename=filename) }}" alt="Uploaded Skin Image">
+            </div>
+            
+            <div class="result-details">
+                <h5 style="color: var(--accent-gold); margin-bottom: 20px;">
+                    <i class="fas fa-stethoscope"></i> AI Analysis Results
+                </h5>
+                
+                <div class="mb-3">
+                    <div class="stat-row"><i class="far fa-image"></i> Image Quality : Good</div>
+                    <div class="stat-row"><i class="fas fa-child"></i> Detection : Standard</div>
+                </div>
+                
+                <div class="probability-box">
+                    <p class="mb-1 text-muted small"><i class="fas fa-exclamation-triangle text-warning"></i> Disease Type :</p>
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h5 class="mb-0 text-white">{{ prediction }}</h5>
+                            <small class="text-muted">Probability : {{ confidence }} %</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label class="text-muted small">Description skin disease</label>
+                    <textarea class="form-control desc-input" rows="3" 
+                        placeholder="Please describe symptoms, medication history..."></textarea>
+                </div>
+
+                <button type="button" class="btn btn-gold mt-3" data-toggle="modal" data-target="#reportModal">
+                    View Diagnosis & Treatment Report <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+
+                <a href="/" class="btn btn-outline-light btn-sm mt-3">Analyze Another</a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="features-section">
+        <div class="container">
+            <h2 class="hero-title" style="font-size: 2rem;">Key Features of Dermascan AI</h2>
+            <div class="row">
+                <div class="col-md-4"><div class="feature-icon"><i class="fas fa-robot"></i></div><h5>AI-Powered</h5><p class="text-muted small">Utilizes advanced visual models.</p></div>
+                <div class="col-md-4"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h5>Medical Diagnostic</h5><p class="text-muted small">Professional reports.</p></div>
+                <div class="col-md-4"><div class="feature-icon"><i class="fas fa-lock"></i></div><h5>Data Security</h5><p class="text-muted small">Strict privacy protection.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <h3 class="text-center mb-4" style="color: #ddd;">Detectable Skin Diseases</h3>
+        <ul class="disease-list">
+            <li style="color: white; font-weight: bold;"><i class="fas fa-check-circle" style="color: #28a745;"></i> Acne</li>
+            <li style="color: white; font-weight: bold;"><i class="fas fa-check-circle" style="color: #28a745;"></i> Eczema</li>
+            <li style="color: white; font-weight: bold;"><i class="fas fa-check-circle" style="color: #28a745;"></i> Rosacea</li>
+            <li style="color: white; font-weight: bold;"><i class="fas fa-check-circle" style="color: #28a745;"></i> Tinea Ringworm</li>
+            <li style="color: #666;"><i class="fas fa-clock" style="color: #666;"></i> Vitiligo <small>(Coming Soon)</small></li>
+            <li style="color: #666;"><i class="fas fa-clock" style="color: #666;"></i> Psoriasis <small>(Coming Soon)</small></li>
+            <li style="color: #666;"><i class="fas fa-clock" style="color: #666;"></i> Melanoma <small>(Coming Soon)</small></li>
+            <li style="color: #666;"><i class="fas fa-clock" style="color: #666;"></i> Dermatitis <small>(Coming Soon)</small></li>
+        </ul>
+    </div>
+
+    <div class="faq-section" style="background-color: #111; padding: 60px 0; border-top: 1px solid #333;">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="badge badge-warning text-dark mb-2" style="background-color:#e2b714;">FAQ</span>
+                <h2 style="color: #fff; font-family: serif; font-size: 2.5rem;">Frequently Asked Questions</h2>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-4"><div class="d-flex"><div class="mr-3"><span style="border: 1px solid #e2b714; color: #e2b714; padding: 2px 8px; border-radius: 4px;">1</span></div><div><h5 style="color: #fff; font-size: 1.1rem; font-weight: bold;">What is Dermascan AI?</h5><p class="text-muted small" style="line-height: 1.6;">Dermascan AI is an online skin disease analysis tool based on artificial intelligence. It can detect skin problems through AI technology, provide accurate diagnosis reports and personalized treatment plans.</p></div></div></div>
+                <div class="col-md-6 mb-4"><div class="d-flex"><div class="mr-3"><span style="border: 1px solid #e2b714; color: #e2b714; padding: 2px 8px; border-radius: 4px;">2</span></div><div><h5 style="color: #fff; font-size: 1.1rem; font-weight: bold;">Is Dermascan AI really free?</h5><p class="text-muted small" style="line-height: 1.6;">Yes, Dermascan AI currently supports the identification and diagnosis of 4 major skin diseases and specifies personalized treatment plans. The service is free to use without restrictions.</p></div></div></div>
+                <div class="col-md-6 mb-4"><div class="d-flex"><div class="mr-3"><span style="border: 1px solid #e2b714; color: #e2b714; padding: 2px 8px; border-radius: 4px;">3</span></div><div><h5 style="color: #fff; font-size: 1.1rem; font-weight: bold;">How does it protect my privacy?</h5><p class="text-muted small" style="line-height: 1.6;">We take privacy very seriously. We do not store the images you generate on our servers, nor do we require any personal information. All data is deleted immediately after processing.</p></div></div></div>
+                <div class="col-md-6 mb-4"><div class="d-flex"><div class="mr-3"><span style="border: 1px solid #e2b714; color: #e2b714; padding: 2px 8px; border-radius: 4px;">4</span></div><div><h5 style="color: #fff; font-size: 1.1rem; font-weight: bold;">What is Medical big model?</h5><p class="text-muted small" style="line-height: 1.6;">Medical big model is an intelligent model based on artificial intelligence technology, specially trained and optimized for the medical and health field to assist in diagnosis and treatment.</p></div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <footer><div class="container"><p>&copy; 2025 Dermascan AI.</p></div></footer>
+
+    {% if prediction %}
+    <div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="font-weight: 700; font-family: serif;">Patient Diagnosis Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Date:</strong> <span id="reportDate"></span></p>
+                    <hr>
+                    <p>Based on AI analysis, there is a clinical suspicion—approximately <strong>{{ confidence }}% probability</strong>—of <strong>{{ prediction }}</strong>.</p>
+                    <p>{{ info.desc }}</p>
+                    <div class="report-section-title">Diagnostic Assessment</div>
+                    <p>Clinical features likely include:</p>
+                    <ul>
+                        {% if info.symptoms %}
+                            {% for symptom in info.symptoms.split(',') %} <li>{{ symptom }}</li> {% endfor %}
+                        {% else %} <li>Typical patterns associated with {{ prediction }}</li> {% endif %}
+                    </ul>
+                    <div class="report-section-title">Evidence-Based Management Plan</div>
+                    <p><strong>1. Immediate Action:</strong><br>{{ info.action }}</p>
+                    <p><strong>2. Treatment Options (OTC):</strong><br>{{ info.treatment }}</p>
+                    {% if info.red_flags %}
+                    <div class="alert alert-warning mt-3" style="background-color: #fff3cd; border-color: #ffeeba; color: #856404;">
+                        <strong>⚠️ Red Flags:</strong>
+                        <ul class="mb-0">{% for flag in info.red_flags %} <li>{{ flag }}</li> {% endfor %}</ul>
+                    </div>
+                    {% endif %}
+                    <p class="mt-4 text-muted small"><em>Disclaimer: Not a medical diagnosis. Consult a dermatologist.</em></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" style="background-color: #2c3e50; border: none;" onclick="window.print()"><i class="fas fa-file-download mr-2"></i> Download PDF Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('uploadPlaceholder').style.display = 'none';
+                    var img = document.getElementById('imagePreview');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('analyzeBtn').style.display = 'inline-block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function startScanning() {
+            document.getElementById('scanOverlay').style.display = 'block';
+            document.getElementById('analyzeBtn').style.display = 'none';
+            document.getElementById('scanningBtn').style.display = 'inline-block';
+            return true;
+        }
+        var dateElement = document.getElementById('reportDate');
+        if (dateElement) { dateElement.innerText = new Date().toLocaleDateString(); }
+    </script>
+</body>
+</html>
